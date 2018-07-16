@@ -1,3 +1,8 @@
+extern crate regex;
+extern crate open;
+
+use regex::{RegexSet, Regex};
+
 use std::path::Path;
 use std::process::{Command, ExitStatus};
 
@@ -27,6 +32,37 @@ fn get_remote_url(path: &Path) -> Result<String, &str> {
     Ok(String::from_utf8_lossy(&res).to_string())
 }
 
+// convert git remote url to https url
+fn create_https_url(url: &str) -> Result<String, &str> {
+    let regexes = [
+        r"git@github.com:(.+)", // 0: ssh github
+        r"https://github.com/(.+)", // 1: https github
+    ];
+
+    let set = RegexSet::new(
+        &regexes
+    ).unwrap();
+
+    let matches: Vec<_> = set.matches(url).into_iter().collect();
+    if matches.len() != 1 {
+        return Err("Multiple url matches.");
+    }
+
+    let re = Regex::new(regexes[0]).unwrap();
+    let caps = re.captures(url).unwrap();
+
+    match matches[0] {
+        0 | 1 => { // github
+            let res = "https://github.com/".to_owned() + &caps[1].to_string();
+            Ok(res)
+        },
+        _ => {
+            panic!("regex matched but regex is not match.(This message should not come out)")
+        }
+    }
+}
+
 fn main() {
-    println!("{}", get_remote_url(Path::new(".")).unwrap());
+    let url = create_https_url(&get_remote_url(Path::new(".")).unwrap()).unwrap();
+    open::that(&url);
 }
