@@ -1,10 +1,12 @@
 extern crate regex;
 extern crate open;
+extern crate clap;
 
 use regex::{RegexSet, Regex};
 
 use std::path::Path;
 use std::process::{Command, ExitStatus};
+use clap::{App, Arg};
 
 // if status_code is not 0 return Err
 fn status_2_result(status: &ExitStatus, message: &'static str) -> Result<i32, &'static str> {
@@ -48,7 +50,7 @@ fn create_https_url(url: &str) -> Result<String, &str> {
         return Err("Multiple url matches.");
     }
 
-    let re = Regex::new(regexes[0]).unwrap();
+    let re = Regex::new(regexes[matches[0]]).unwrap();
     let caps = re.captures(url).unwrap();
 
     match matches[0] {
@@ -63,6 +65,17 @@ fn create_https_url(url: &str) -> Result<String, &str> {
 }
 
 fn main() {
-    let url = create_https_url(&get_remote_url(Path::new(".")).unwrap()).unwrap();
+    let matches = App::new("auto_wmake")
+    .version("0.1")
+    .author("kurenaif <antyobido@gmail.com>")
+    .about("open github page")
+    .arg(Arg::with_name("path")
+        .help("Path of the git repository where you want to open github.")
+        .index(1))
+    .get_matches();
+
+    let path = matches.value_of("path").unwrap_or(".");
+
+    let url = create_https_url(&get_remote_url(Path::new(path)).unwrap()).unwrap();
     open::that(&url);
 }

@@ -6,3 +6,4 @@ authors = ["kurenaif <antyobido@gmail.com>"]
 [dependencies]
 regex = "1"
 open = "*"
+clap = "2"
