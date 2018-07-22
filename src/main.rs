@@ -96,7 +96,15 @@ fn main() {
 
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
 
-    let remote_url = match get_remote_url(&path) {
+    let path_dir = match path.parent() {
+        Some(parent) => parent,
+        None => {
+            eprintln!("error: {}'s parent is not found", path.to_str().unwrap());
+            std::process::exit(1);
+        }
+    };
+
+    let remote_url = match get_remote_url(&path_dir) {
         Ok(url) => url,
         Err(message) => {eprintln!("{}", message); std::process::exit(1)}
     };
@@ -106,7 +114,7 @@ fn main() {
         Err(message) => {eprintln!("{}", message); std::process::exit(1)}
     };
 
-    let root_path = match get_local_root_path_string(&path){
+    let root_path = match get_local_root_path_string(&path_dir){
         Ok(path) => path,
         Err(message) => {eprintln!("{}", message); std::process::exit(1)}
     };
@@ -115,5 +123,8 @@ fn main() {
 
     let root_path_str = ref_path.to_str().unwrap().to_string();
 
-    println!("{}", host + "/" + &root_path_str);
+    let open_url = host + "/tree/master/" + &root_path_str;
+
+    println!("{}", open_url);
+    open::that(open_url);
 }
