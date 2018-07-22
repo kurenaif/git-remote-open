@@ -4,7 +4,8 @@ extern crate clap;
 
 use regex::{RegexSet, Regex};
 
-use std::path::Path;
+use std::fs;
+use std::path::{Path};
 use std::process::{Command, ExitStatus};
 use clap::{App, Arg};
 
@@ -27,7 +28,7 @@ fn get_remote_url(path: &Path) -> Result<String, &str> {
     .expect("failed to get url");
 
     try!(status_2_result(&process.status, "failed to run \"git config remote.origin.url\""));
-    
+
     let mut res = process.stdout;
     res.pop();// remove \n
 
@@ -35,7 +36,7 @@ fn get_remote_url(path: &Path) -> Result<String, &str> {
 }
 
 // get the root path (which you run `git init`)
-fn get_local_root_path(path: &Path) -> Result<String, &str> {
+fn get_local_root_path_string(path: &Path) -> Result<String, &str> {
     let process = Command::new("git")
     .current_dir(path)
     .arg("rev-parse")
@@ -45,10 +46,12 @@ fn get_local_root_path(path: &Path) -> Result<String, &str> {
 
     try!(status_2_result(&process.status, "failed to run \"git rev-parse --show-toplevel\""));
     
-    let mut res = process.stdout;
-    res.pop();// remove \n
+    let mut abspath_vec = process.stdout;
+    abspath_vec.pop();// remove \n
 
-    Ok(String::from_utf8_lossy(&res).to_string())
+   let abspath_string = String::from_utf8_lossy(&abspath_vec).to_string();
+
+   Ok(abspath_string)
 }
 
 // convert git remote url to https url
@@ -91,9 +94,9 @@ fn main() {
         .index(1))
     .get_matches();
 
-    let path = matches.value_of("path").unwrap_or(".");
+    let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
 
-    let remote_url = match get_remote_url(Path::new(path)) {
+    let remote_url = match get_remote_url(&path) {
         Ok(url) => url,
         Err(message) => {eprintln!("{}", message); std::process::exit(1)}
     };
@@ -103,5 +106,14 @@ fn main() {
         Err(message) => {eprintln!("{}", message); std::process::exit(1)}
     };
 
-    println!("{}", host);
+    let root_path = match get_local_root_path_string(&path){
+        Ok(path) => path,
+        Err(message) => {eprintln!("{}", message); std::process::exit(1)}
+    };
+
+    let ref_path = path.strip_prefix(root_path).unwrap();
+
+    let root_path_str = ref_path.to_str().unwrap().to_string();
+
+    println!("{}", host + "/" + &root_path_str);
 }
