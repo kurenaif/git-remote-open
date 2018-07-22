@@ -34,6 +34,23 @@ fn get_remote_url(path: &Path) -> Result<String, &str> {
     Ok(String::from_utf8_lossy(&res).to_string())
 }
 
+// get the root path (which you run `git init`)
+fn get_local_root_path(path: &Path) -> Result<String, &str> {
+    let process = Command::new("git")
+    .current_dir(path)
+    .arg("rev-parse")
+    .arg("--show-toplevel")
+    .output()
+    .expect("failed to get root path");
+
+    try!(status_2_result(&process.status, "failed to run \"git rev-parse --show-toplevel\""));
+    
+    let mut res = process.stdout;
+    res.pop();// remove \n
+
+    Ok(String::from_utf8_lossy(&res).to_string())
+}
+
 // convert git remote url to https url
 fn create_https_url(url: &str) -> Result<String, &str> {
     let regexes = [
@@ -76,6 +93,15 @@ fn main() {
 
     let path = matches.value_of("path").unwrap_or(".");
 
-    let url = create_https_url(&get_remote_url(Path::new(path)).unwrap()).unwrap();
-    open::that(&url);
+    let remote_url = match get_remote_url(Path::new(path)) {
+        Ok(url) => url,
+        Err(message) => {eprintln!("{}", message); std::process::exit(1)}
+    };
+
+    let host = match create_https_url(&remote_url) {
+        Ok(url) => url,
+        Err(message) => {eprintln!("{}", message); std::process::exit(1)}
+    };
+
+    println!("{}", host);
 }
