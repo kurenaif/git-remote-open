@@ -96,11 +96,16 @@ fn main() {
 
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
 
-    let path_dir = match path.parent() {
-        Some(parent) => parent,
-        None => {
-            eprintln!("error: {}'s parent is not found", path.to_str().unwrap());
-            std::process::exit(1);
+    let path_dir =
+    if path.is_dir() {
+        path.as_path()
+    } else {
+        match path.parent() {
+            Some(parent) => parent,
+            None => {
+                eprintln!("error: {}'s parent is not found", path.to_str().unwrap());
+                std::process::exit(1);
+            }
         }
     };
 
