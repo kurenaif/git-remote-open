@@ -51,3 +51,7 @@ cargo install --git https://github.com/kurenaif/git-remote-open
 ## Related tool
 
 [typester/ghopen](https://github.com/typester/gh-open)
+
+## LICENSE
+
+[MIT](./LICENSE)
