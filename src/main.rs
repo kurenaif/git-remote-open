@@ -75,8 +75,10 @@ fn create_https_url(url: &str) -> Result<String, &str> {
 
     match matches[0] {
         0 | 1 => { // github
-            let res = "https://github.com/".to_owned() + &caps[1].to_string();
-            Ok(res)
+            let connected_str = "https://github.com/".to_owned() + &caps[1].to_string();
+            let re = Regex::new(r"\.git$").unwrap();
+            let res = re.replace_all(&connected_str, "");
+            Ok(res.to_string())
         },
         _ => {
             panic!("regex matched but regex is not match.(This message should not come out)")
@@ -128,7 +130,11 @@ fn main() {
 
     let root_path_str = ref_path.to_str().unwrap().to_string();
 
-    let open_url = host + "/tree/master/" + &root_path_str;
+    let open_url = if root_path_str.is_empty() {
+        host
+    } else {
+        host + "/tree/master/" + &root_path_str
+    };
 
     println!("{}", open_url);
     open::that(open_url);
