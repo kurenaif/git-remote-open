@@ -15,6 +15,7 @@ USAGE:
 FLAGS:
     -h, --help       Prints help information
     -r, --root       open root page regardless of argument "path"
+    -s, --slient     not open browser (only url standard output)
     -V, --version    Prints version information
 
 ARGS:

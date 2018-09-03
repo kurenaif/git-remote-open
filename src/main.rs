@@ -98,6 +98,10 @@ fn main() {
         .short("r")
         .long("root")
         .help("open root page regardless of argument \"path\""))
+    .arg(Arg::with_name("silent")
+        .short("s")
+        .long("slient")
+        .help("not open browser (only url standard output)"))
     .get_matches();
 
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
@@ -141,5 +145,8 @@ fn main() {
     };
 
     println!("{}", open_url);
-    open::that(open_url);
+
+    if !matches.is_present("silent") {
+        open::that(open_url);
+    }
 }
