@@ -94,6 +94,10 @@ fn main() {
     .arg(Arg::with_name("path")
         .help("Path of the git repository where you want to open github.")
         .index(1))
+    .arg(Arg::with_name("root")
+        .short("r")
+        .long("root")
+        .help("open root page regardless of argument \"path\""))
     .get_matches();
 
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
@@ -130,7 +134,7 @@ fn main() {
 
     let root_path_str = ref_path.to_str().unwrap().to_string();
 
-    let open_url = if root_path_str.is_empty() {
+    let open_url = if root_path_str.is_empty() || matches.is_present("root") {
         host
     } else {
         host + "/tree/master/" + &root_path_str
