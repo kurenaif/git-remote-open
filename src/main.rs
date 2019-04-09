@@ -102,6 +102,12 @@ fn main() {
         .short("s")
         .long("slient")
         .help("not open browser (only url standard output)"))
+    .arg(Arg::with_name("line")
+        .short("l")
+        .long("line")
+        .value_name("N")
+        .help("open line number")
+        .takes_value(true))
     .get_matches();
 
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
@@ -138,10 +144,16 @@ fn main() {
 
     let root_path_str = ref_path.to_str().unwrap().to_string();
 
-    let open_url = if root_path_str.is_empty() || matches.is_present("root") {
+    let source_url = if root_path_str.is_empty() || matches.is_present("root") {
         host
     } else {
         host + "/tree/master/" + &root_path_str
+    };
+
+    let open_url = if matches.is_present("line") {
+        source_url + "#L" + matches.value_of("line").unwrap()
+    } else {
+        source_url
     };
 
     println!("{}", open_url);
