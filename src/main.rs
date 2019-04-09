@@ -105,8 +105,8 @@ fn main() {
     .arg(Arg::with_name("line")
         .short("l")
         .long("line")
-        .value_name("N")
-        .help("open line number")
+        .value_name("N[-N]")
+        .help("open line numbers: \"line_number\" or \"[line_start_number]-[line_end_number]\"")
         .takes_value(true))
     .get_matches();
 
@@ -151,7 +151,16 @@ fn main() {
     };
 
     let open_url = if matches.is_present("line") {
-        source_url + "#L" + matches.value_of("line").unwrap()
+        let line_option_str = matches.value_of("line").unwrap();
+        if Regex::new(r"^\d+$").unwrap().is_match(line_option_str){
+            source_url + "#L" + matches.value_of("line").unwrap()
+        } else if Regex::new(r"^\d+-\d+$").unwrap().is_match(line_option_str) {
+            let line_numbers: Vec<&str> = line_option_str.split('-').collect();
+            source_url + "#L" + line_numbers[0] + "-#L" + line_numbers[1]
+        } else {
+            eprintln!("error: line number's format is invalid");
+            std::process::exit(1);
+        }
     } else {
         source_url
     };
