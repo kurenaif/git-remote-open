@@ -102,6 +102,12 @@ fn main() {
         .short("s")
         .long("slient")
         .help("not open browser (only url standard output)"))
+    .arg(Arg::with_name("line")
+        .short("l")
+        .long("line")
+        .value_name("N[-N]")
+        .help("open line numbers: \"line_number\" or \"[line_start_number]-[line_end_number]\"")
+        .takes_value(true))
     .get_matches();
 
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
@@ -138,10 +144,25 @@ fn main() {
 
     let root_path_str = ref_path.to_str().unwrap().to_string();
 
-    let open_url = if root_path_str.is_empty() || matches.is_present("root") {
+    let source_url = if root_path_str.is_empty() || matches.is_present("root") {
         host
     } else {
         host + "/tree/master/" + &root_path_str
+    };
+
+    let open_url = if matches.is_present("line") {
+        let line_option_str = matches.value_of("line").unwrap();
+        if Regex::new(r"^\d+$").unwrap().is_match(line_option_str){
+            source_url + "#L" + matches.value_of("line").unwrap()
+        } else if Regex::new(r"^\d+-\d+$").unwrap().is_match(line_option_str) {
+            let line_numbers: Vec<&str> = line_option_str.split('-').collect();
+            source_url + "#L" + line_numbers[0] + "-#L" + line_numbers[1]
+        } else {
+            eprintln!("error: line number's format is invalid");
+            std::process::exit(1);
+        }
+    } else {
+        source_url
     };
 
     println!("{}", open_url);

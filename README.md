@@ -10,13 +10,16 @@ Github remote url open in browser.
 
 ```
 USAGE:
-    git-remote-open [FLAGS] [path]
+    git-remote-open [FLAGS] [OPTIONS] [path]
 
 FLAGS:
     -h, --help       Prints help information
     -r, --root       open root page regardless of argument "path"
     -s, --slient     not open browser (only url standard output)
     -V, --version    Prints version information
+
+OPTIONS:
+    -l, --line <N[-N]>    open line numbers: "line_number" or "[line_start_number]-[line_end_number]"
 
 ARGS:
     <path>    Path of the git repository where you want to open github.
