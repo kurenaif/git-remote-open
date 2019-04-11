@@ -107,7 +107,7 @@ fn create_https_url(url: &str) -> Result<String, &str> {
     }
 }
 
-fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<String, &str> {
+fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<String, String> {
     match domain {
         Domain::Github => {
             if Regex::new(r"^\d+$").unwrap().is_match(line_option_str){
@@ -116,7 +116,7 @@ fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<St
                 let line_numbers: Vec<&str> = line_option_str.split('-').collect();
                 Ok("#L".to_string() + line_numbers[0] + "-#L" + line_numbers[1])
             } else {
-                Err("error: line number's format is invalid")
+                Err("error: line number's format is invalid".to_string())
             }
         },
         _ => {
