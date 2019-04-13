@@ -125,30 +125,7 @@ fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<St
     }
 }
 
-fn main() {
-    let matches = App::new("auto_wmake")
-    .version("0.1")
-    .author("kurenaif <antyobido@gmail.com>")
-    .about("open github page")
-    .arg(Arg::with_name("path")
-        .help("Path of the git repository where you want to open github.")
-        .index(1))
-    .arg(Arg::with_name("root")
-        .short("r")
-        .long("root")
-        .help("open root page regardless of argument \"path\""))
-    .arg(Arg::with_name("silent")
-        .short("s")
-        .long("slient")
-        .help("not open browser (only url standard output)"))
-    .arg(Arg::with_name("line")
-        .short("l")
-        .long("line")
-        .value_name("N[-N]")
-        .help("open line numbers: \"line_number\" or \"[line_start_number]-[line_end_number]\"")
-        .takes_value(true))
-    .get_matches();
-
+fn app(matches: &clap::ArgMatches) -> String {
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
 
     let path_dir =
@@ -194,14 +171,42 @@ fn main() {
         host + "/tree/master/" + &root_path_str
     };
 
-    let open_url = if matches.is_present("line") {
+    if matches.is_present("line") {
         match line_number_to_string(&domain, &matches.value_of("line").unwrap().to_string()) {
             Ok(line_str) => line_str,
             Err(message) => {eprintln!("{}", message); std::process::exit(1)}
         }
     } else {
         source_url
-    };
+    }
+}
+
+fn main() {
+    let matches = App::new("auto_wmake")
+    .version("0.1")
+    .author("kurenaif <antyobido@gmail.com>")
+    .about("open github page")
+    .arg(Arg::with_name("path")
+        .help("Path of the git repository where you want to open github.")
+        .index(1))
+    .arg(Arg::with_name("root")
+        .short("r")
+        .long("root")
+        .help("open root page regardless of argument \"path\""))
+    .arg(Arg::with_name("silent")
+        .short("s")
+        .long("slient")
+        .help("not open browser (only url standard output)"))
+    .arg(Arg::with_name("line")
+        .short("l")
+        .long("line")
+        .value_name("N[-N]")
+        .help("open line numbers: \"line_number\" or \"[line_start_number]-[line_end_number]\"")
+        .takes_value(true))
+    .get_matches();
+
+
+    let open_url = app(&matches);
 
     println!("{}", open_url);
 
