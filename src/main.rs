@@ -119,7 +119,7 @@ fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<St
     }
 }
 
-fn app(matches: &clap::ArgMatches) -> Result<String, String> {
+fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
 
     let path_dir =
@@ -184,7 +184,7 @@ fn main() {
     .get_matches();
 
 
-    let open_url = match app(&matches) {
+    let open_url = match get_url(&matches) {
         Ok(url) => url,
         Err(msg) => {
             eprintln!("error: {}", msg);
