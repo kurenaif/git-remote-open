@@ -13,7 +13,7 @@ enum Domain {
     Github,
 }
 
-// if status_code is not 0 return Err
+/// if status_code is not 0 return Err
 fn status_2_result(status: &ExitStatus, message: &'static str) -> Result<i32, &'static str> {
     let status_code = status.code().unwrap();
     match status_code {
@@ -22,7 +22,7 @@ fn status_2_result(status: &ExitStatus, message: &'static str) -> Result<i32, &'
     }
 }
 
-// get the url of the remote of the repository to which the path belongs.
+/// get the url of the remote of the repository to which the path belongs.
 fn get_remote_url(path: &Path) -> Result<String, &str> {
     let process = Command::new("git")
     .current_dir(path)
@@ -39,7 +39,7 @@ fn get_remote_url(path: &Path) -> Result<String, &str> {
     Ok(String::from_utf8_lossy(&res).to_string())
 }
 
-// get the root path (which you run `git init`)
+/// get the root path (which you run `git init`)
 fn get_local_root_path_string(path: &Path) -> Result<String, &str> {
     let process = Command::new("git")
     .current_dir(path)
@@ -58,7 +58,7 @@ fn get_local_root_path_string(path: &Path) -> Result<String, &str> {
    Ok(abspath_string)
 }
 
-// url parse to (domain, path)
+/// url parse to (domain, path)
 fn parse_domain(url: &str) -> Result<(Domain, String), &str> {
     let regexes = [
         r"git@github.com:(.+)", // 0: ssh github
@@ -90,7 +90,7 @@ fn parse_domain(url: &str) -> Result<(Domain, String), &str> {
     }
 }
 
-// convert git remote url to https url
+/// convert git remote url to https url
 fn create_https_url(url: &str) -> Result<String, &str> {
     let domain = parse_domain(url)?;
 
@@ -104,6 +104,14 @@ fn create_https_url(url: &str) -> Result<String, &str> {
     }
 }
 
+/// 
+/// Convert command line arguments passed in '-l' to strings appropriate for each domain
+/// 
+/// # Examples
+/// ```
+/// -l {n}-{m} => path/to/url/#L{n}-#L{m}
+/// -l {n} => path/to/url/#L{n}
+/// ```
 fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<String, String> {
     match domain {
         Domain::Github => {
@@ -119,6 +127,7 @@ fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<St
     }
 }
 
+/// get open url
 fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
 
