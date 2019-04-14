@@ -101,9 +101,6 @@ fn create_https_url(url: &str) -> Result<String, &str> {
             let res = re.replace_all(&connected_str, "");
             Ok(res.to_string())
         },
-        _ => {
-            panic!("regex matched but regex is not match.(This message should not come out)")
-        }
     }
 }
 
@@ -119,13 +116,10 @@ fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<St
                 Err("error: line number's format is invalid".to_string())
             }
         },
-        _ => {
-            panic!("domain not found (but this message will be not appeared because it will have been to appeared at parse_domain function)")
-        }
     }
 }
 
-fn app(matches: &clap::ArgMatches) -> String {
+fn app(matches: &clap::ArgMatches) -> Result<String, String> {
     let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
 
     let path_dir =
@@ -135,31 +129,18 @@ fn app(matches: &clap::ArgMatches) -> String {
         match path.parent() {
             Some(parent) => parent,
             None => {
-                eprintln!("error: {}'s parent is not found", path.to_str().unwrap());
-                std::process::exit(1);
+                return Err(format!("error: {}'s parent is not found", path.to_str().unwrap()));
             }
         }
     };
 
-    let remote_url = match get_remote_url(&path_dir) {
-        Ok(url) => url,
-        Err(message) => {eprintln!("{}", message); std::process::exit(1)}
-    };
+    let remote_url = get_remote_url(&path_dir)?;
 
-    let domain = match parse_domain(&remote_url) {
-        Ok(domain) => domain.0,
-        Err(message) => {eprintln!("{}", message); std::process::exit(1)}
-    };
+    let domain = parse_domain(&remote_url)?.0;
 
-    let host = match create_https_url(&remote_url) {
-        Ok(url) => url,
-        Err(message) => {eprintln!("{}", message); std::process::exit(1)}
-    };
+    let host = create_https_url(&remote_url)?;
 
-    let root_path = match get_local_root_path_string(&path_dir){
-        Ok(path) => path,
-        Err(message) => {eprintln!("{}", message); std::process::exit(1)}
-    };
+    let root_path = get_local_root_path_string(&path_dir)?;
 
     let ref_path = path.strip_prefix(root_path).unwrap();
 
@@ -172,12 +153,9 @@ fn app(matches: &clap::ArgMatches) -> String {
     };
 
     if matches.is_present("line") {
-        match line_number_to_string(&domain, &matches.value_of("line").unwrap().to_string()) {
-            Ok(line_str) => line_str,
-            Err(message) => {eprintln!("{}", message); std::process::exit(1)}
-        }
+        Ok(line_number_to_string(&domain, &matches.value_of("line").unwrap().to_string())?)
     } else {
-        source_url
+        Ok(source_url)
     }
 }
 
@@ -206,11 +184,17 @@ fn main() {
     .get_matches();
 
 
-    let open_url = app(&matches);
+    let open_url = match app(&matches) {
+        Ok(url) => url,
+        Err(msg) => {
+            eprintln!("error: {}", msg);
+            ::std::process::exit(1);
+        }
+    };
 
     println!("{}", open_url);
 
     if !matches.is_present("silent") {
-        open::that(open_url);
+        let _ = open::that(open_url);
     }
 }
