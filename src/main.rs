@@ -207,3 +207,27 @@ fn main() {
         let _ = open::that(open_url);
     }
 }
+
+extern crate ulid;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use ulid::Ulid;
+    use std::path::{Path, PathBuf};
+
+    fn make_random_name_dir() -> PathBuf {
+
+        let ulid = Ulid::new().to_string();
+        let dir_path = Path::new("unit_test_dir").join(&ulid);
+        fs::create_dir_all(&dir_path);
+        dir_path
+    }
+
+    #[test]
+    fn it_works(){
+        make_random_name_dir();
+        assert_eq!(2+2, 4);
+    }
+}
