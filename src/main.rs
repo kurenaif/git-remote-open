@@ -218,7 +218,6 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     fn make_random_name_dir() -> PathBuf {
-
         let ulid = Ulid::new().to_string();
         let dir_path = Path::new("unit_test_dir").join(&ulid);
         fs::create_dir_all(&dir_path);
