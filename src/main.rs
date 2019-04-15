@@ -216,17 +216,35 @@ mod tests {
     use std::fs;
     use ulid::Ulid;
     use std::path::{Path, PathBuf};
+    use std::process::Command;
 
-    fn make_random_name_dir() -> PathBuf {
-        let ulid = Ulid::new().to_string();
-        let dir_path = Path::new("unit_test_dir").join(&ulid);
-        fs::create_dir_all(&dir_path);
-        dir_path
+    struct TargetDir {
+        dir_path: PathBuf
+    }
+
+    impl TargetDir {
+        pub fn new() -> TargetDir {
+            let ulid = Ulid::new().to_string();
+            let dir_path = Path::new("unit_test_dir").join(&ulid);
+            fs::create_dir_all(&dir_path);
+
+            let mut process = Command::new("git")
+            .current_dir(&dir_path)
+            .arg("init")
+            .spawn().expect("failed to git init");
+            process.wait();
+            TargetDir{dir_path: dir_path.to_path_buf()}
+        }
+    }
+
+    impl Drop for TargetDir {
+        fn drop(&mut self){
+            // fs::remove_dir(&self.dir_path);
+        }
     }
 
     #[test]
     fn it_works(){
-        make_random_name_dir();
-        assert_eq!(2+2, 4);
+        let target_dir = TargetDir::new();
     }
 }
