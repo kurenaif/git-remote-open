@@ -250,6 +250,10 @@ mod tests {
         pub fn create_file(&self, file_name: &Path) {
             File::create(&self.dir_path.join(file_name));
         }
+
+        pub fn create_dir(&self, file_name: &Path) {
+            fs::create_dir(&self.dir_path.join(file_name));
+        }
     }
 
     impl Drop for TargetDir {
@@ -265,9 +269,31 @@ mod tests {
         assert_eq!(get_remote_url(&target_dir.dir_path).unwrap(), dummy_url);
     }
 
+    #[test]
     fn github__html__get_remote_url(){
         let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
         let target_dir = TargetDir::new(&dummy_url);
         assert_eq!(get_remote_url(&target_dir.dir_path).unwrap(), dummy_url);
+    }
+
+    #[test]
+    fn  get_git_init_dir__target_file(){
+        let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
+        let target_dir = TargetDir::new(&dummy_url);
+        let target_filename = "hoge.txt";
+        let target_path = target_dir.dir_path.join(&target_filename);
+        target_dir.create_file(Path::new(target_filename));
+        assert_eq!(Path::new(&get_local_root_path_string(&target_path).unwrap()), target_dir.dir_path);
+    }
+
+    #[test]
+    fn  get_git_init_dir__target_dir(){
+        let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
+        let target_dir = TargetDir::new(&dummy_url);
+        let target_dirname = "hoge_dir";
+        let target_path = target_dir.dir_path.join(&target_dirname);
+        target_dir.create_dir(Path::new(target_dirname));
+        eprintln!("path: {:?}", target_path);
+        assert_eq!(Path::new(&get_local_root_path_string(&target_path).unwrap()), fs::canonicalize(&target_dir.dir_path).unwrap());
     }
 }
