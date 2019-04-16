@@ -247,7 +247,7 @@ mod tests {
             TargetDir{dir_path: dir_path.to_path_buf()}
         }
 
-        pub fn new_file(&self, file_name: &Path) {
+        pub fn create_file(&self, file_name: &Path) {
             File::create(&self.dir_path.join(file_name));
         }
     }
