@@ -162,7 +162,7 @@ fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
     };
 
     if matches.is_present("line") {
-        Ok(line_number_to_string(&domain, &matches.value_of("line").unwrap().to_string())?)
+        Ok(source_url.to_string() + &line_number_to_string(&domain, &matches.value_of("line").unwrap().to_string())?)
     } else {
         Ok(source_url)
     }
