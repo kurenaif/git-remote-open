@@ -254,8 +254,15 @@ mod tests {
     }
 
     #[test]
-    fn it_works(){
+    fn github__ssh__get_remote_url(){
         let dummy_url = "git@github.com:kurenaif/git-remote-open-unit-test-dummy.git";
         let target_dir = TargetDir::new(&dummy_url);
+        assert_eq!(get_remote_url(&target_dir.dir_path).unwrap(), dummy_url);
+    }
+
+    fn github__html__get_remote_url(){
+        let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
+        let target_dir = TargetDir::new(&dummy_url);
+        assert_eq!(get_remote_url(&target_dir.dir_path).unwrap(), dummy_url);
     }
 }
