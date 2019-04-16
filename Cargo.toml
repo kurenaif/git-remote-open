@@ -7,3 +7,4 @@ authors = ["kurenaif <antyobido@gmail.com>"]
 regex = "1"
 open = "*"
 clap = "2"
+ulid = "0.3.1"

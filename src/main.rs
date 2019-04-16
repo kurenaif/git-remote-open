@@ -207,3 +207,55 @@ fn main() {
         let _ = open::that(open_url);
     }
 }
+
+extern crate ulid;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use ulid::Ulid;
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    struct TargetDir {
+        dir_path: PathBuf
+    }
+
+    impl TargetDir {
+        pub fn new(remote_url: &str) -> TargetDir {
+            let ulid = Ulid::new().to_string();
+            let dir_path = Path::new("unit_test_dir").join(&ulid);
+            fs::create_dir_all(&dir_path);
+
+            let mut process = Command::new("git")
+            .current_dir(&dir_path)
+            .arg("init")
+            .spawn().expect("failed to git init");
+            process.wait();
+
+            let mut process = Command::new("git")
+            .current_dir(&dir_path)
+            .arg("remote")
+            .arg("add")
+            .arg("origin")
+            .arg(remote_url)
+            .spawn().expect("failed to add remote url");
+            process.wait();
+
+            TargetDir{dir_path: dir_path.to_path_buf()}
+        }
+    }
+
+    impl Drop for TargetDir {
+        fn drop(&mut self){
+            fs::remove_dir(&self.dir_path);
+        }
+    }
+
+    #[test]
+    fn it_works(){
+        let dummy_url = "git@github.com:kurenaif/git-remote-open-unit-test-dummy.git";
+        let target_dir = TargetDir::new(&dummy_url);
+    }
+}
