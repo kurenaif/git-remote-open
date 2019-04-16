@@ -40,7 +40,19 @@ fn get_remote_url(path: &Path) -> Result<String, &str> {
 }
 
 /// get the root path (which you run `git init`)
-fn get_local_root_path_string(path: &Path) -> Result<String, &str> {
+fn get_local_root_path_string(path: &Path) -> Result<String, String> {
+    let path =
+    if path.is_dir() {
+        path
+    } else {
+        match path.parent() {
+            Some(parent) => parent,
+            None => {
+                return Err(format!("error: {}'s parent is not found", path.to_str().unwrap()));
+            }
+        }
+    };
+
     let process = Command::new("git")
     .current_dir(path)
     .arg("rev-parse")
@@ -283,7 +295,7 @@ mod tests {
         let target_filename = "hoge.txt";
         let target_path = target_dir.dir_path.join(&target_filename);
         target_dir.create_file(Path::new(target_filename));
-        assert_eq!(Path::new(&get_local_root_path_string(&target_path).unwrap()), target_dir.dir_path);
+        assert_eq!(Path::new(&get_local_root_path_string(&target_path).unwrap()), fs::canonicalize(&target_dir.dir_path).unwrap());
     }
 
     #[test]
