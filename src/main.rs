@@ -214,6 +214,7 @@ extern crate ulid;
 mod tests {
     use super::*;
     use std::fs;
+    use std::fs::File;
     use ulid::Ulid;
     use std::path::{Path, PathBuf};
     use std::process::Command;
@@ -244,6 +245,10 @@ mod tests {
             process.wait();
 
             TargetDir{dir_path: dir_path.to_path_buf()}
+        }
+
+        pub fn new_file(&self, file_name: &Path) {
+            File::create(&self.dir_path.join(file_name));
         }
     }
 
