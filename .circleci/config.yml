@@ -2,15 +2,32 @@ version: 2
 jobs:
   build:
     docker:
-      - image: debian:stretch
-
+      - image: circleci/rust
     steps:
       - checkout
-
       - run:
-          name: Greeting
-          command: echo Hello, world.
-
+          name: rustup version
+          command: rustup --version
       - run:
-          name: Print the Current Time
-          command: date
+          name: rustup component add
+          command: rustup component add clippy rustfmt
+      - run:
+          name: fmt
+          command: cargo fmt -- --check
+      - restore_cache:
+          keys:
+            - v1-cargo-lock-{{checksum "Cargo.lock"}}
+      - run:
+          name: build
+          command: cargo build
+      - save_cache:
+          key: v1-cargo-lock-{{checksum "Cargo.lock"}}
+          paths:
+            - "/usr/local/cargo/registry"
+            - "target"
+      - run:
+          name: lint
+          command: cargo clippy -- -D warnings
+      - run:
+          name: test
+          command: cargo test
