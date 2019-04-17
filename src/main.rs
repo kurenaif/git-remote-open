@@ -286,6 +286,15 @@ mod tests {
 
             let mut process = Command::new("git")
             .current_dir(&dir_path)
+            .arg("commit")
+            .arg("--allow-empty")
+            .arg("-m")
+            .arg("\"first commit\"")
+            .spawn().expect("failed to git init");
+            process.wait();
+
+            let mut process = Command::new("git")
+            .current_dir(&dir_path)
             .arg("remote")
             .arg("add")
             .arg("origin")
@@ -303,11 +312,29 @@ mod tests {
         pub fn create_dir(&self, file_name: &Path) {
             fs::create_dir(&self.dir_path.join(file_name));
         }
+
+        pub fn create_branch(&self, branch_name: &str) {
+            let mut process = Command::new("git")
+            .current_dir(&self.dir_path)
+            .arg("branch")
+            .arg(branch_name)
+            .spawn().expect("fail git branch command");
+            process.wait();
+        }
+
+        pub fn checkout_branch(&self, branch_name: &str) {
+            let mut process = Command::new("git")
+            .current_dir(&self.dir_path)
+            .arg("checkout")
+            .arg(&branch_name)
+            .spawn().expect("fail git checkout command");
+            process.wait();
+        }
     }
 
     impl Drop for TargetDir {
         fn drop(&mut self){
-            fs::remove_dir_all(&self.dir_path);
+            // fs::remove_dir_all(&self.dir_path);
         }
     }
 
@@ -354,4 +381,11 @@ mod tests {
     fn  get__line_number_to_string__range_param(){
         assert_eq!(&line_number_to_string(&Domain::Github, "12-34").unwrap(), "#L12-#L34");
     }
+
+    #[test]
+    fn current_branch_name__master() {
+        let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
+        let target_dir = TargetDir::new(&dummy_url);
+        target_dir.create_branch("hogehoge_mogumogu");
+    } 
 }
