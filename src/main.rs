@@ -387,5 +387,18 @@ mod tests {
         let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
         let target_dir = TargetDir::new(&dummy_url);
         target_dir.create_branch("hogehoge_mogumogu");
+        assert_eq!(get_current_branch_name(&target_dir.dir_path).unwrap(), "master");
+    } 
+
+    #[test]
+    fn current_branch_name__new_branch() {
+        let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
+        let target_dir = TargetDir::new(&dummy_url);
+        target_dir.create_branch("new_branch");
+        target_dir.create_branch("dummy1");
+        target_dir.create_branch("dummy2");
+        target_dir.create_branch("dummy3");
+        target_dir.checkout_branch("new_branch");
+        assert_eq!(get_current_branch_name(&target_dir.dir_path).unwrap(), "new_branch");
     } 
 }
