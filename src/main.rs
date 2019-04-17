@@ -5,12 +5,30 @@ extern crate clap;
 use regex::{RegexSet, Regex};
 
 use std::fs;
-use std::path::{Path};
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 use clap::{App, Arg};
 
 enum Domain {
     Github,
+}
+
+/// some git command require dir's abs path.
+/// so, process argumented file path to it's dir(parent) path.
+/// note: file's parent dir always exists because repository root dir is exist.
+fn get_abs_dir_path(path: &Path) -> Result<PathBuf, String> {
+    let path = fs::canonicalize(path).unwrap();
+
+    if path.is_dir() {
+        Ok(path)
+    } else {
+        match path.parent() {
+            Some(parent) => Ok(parent.to_path_buf()),
+            None => {
+                Err(format!("error: {}'s parent is not found", path.to_str().unwrap()))
+            }
+        }
+    }
 }
 
 /// if status_code is not 0 return Err
@@ -24,8 +42,9 @@ fn status_2_result(status: &ExitStatus, message: &'static str) -> Result<i32, &'
 
 /// get the url of the remote of the repository to which the path belongs.
 fn get_remote_url(path: &Path) -> Result<String, &str> {
+    let dir_path = get_abs_dir_path(path).unwrap();
     let process = Command::new("git")
-    .current_dir(path)
+    .current_dir(&dir_path)
     .arg("config")
     .arg("remote.origin.url")
     .output()
@@ -41,20 +60,10 @@ fn get_remote_url(path: &Path) -> Result<String, &str> {
 
 /// get the root path (which you run `git init`)
 fn get_local_root_path_string(path: &Path) -> Result<String, String> {
-    let path =
-    if path.is_dir() {
-        path
-    } else {
-        match path.parent() {
-            Some(parent) => parent,
-            None => {
-                return Err(format!("error: {}'s parent is not found", path.to_str().unwrap()));
-            }
-        }
-    };
+    let dir_path = get_abs_dir_path(path).unwrap();
 
     let process = Command::new("git")
-    .current_dir(path)
+    .current_dir(&dir_path)
     .arg("rev-parse")
     .arg("--show-toplevel")
     .output()
@@ -124,7 +133,7 @@ fn create_https_url(url: &str) -> Result<String, &str> {
 /// -l {n}-{m} => path/to/url/#L{n}-#L{m}
 /// -l {n} => path/to/url/#L{n}
 /// ```
-fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<String, String> {
+fn line_number_to_string(domain: &Domain, line_option_str: &str) -> Result<String, String> {
     match domain {
         Domain::Github => {
             if Regex::new(r"^\d+$").unwrap().is_match(line_option_str){
@@ -141,29 +150,18 @@ fn line_number_to_string(domain: &Domain, line_option_str: &String) -> Result<St
 
 /// get open url
 fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
-    let path = fs::canonicalize(matches.value_of("path").unwrap_or(".")).unwrap();
+    let path = Path::new(matches.value_of("path").unwrap_or("."));
 
-    let path_dir =
-    if path.is_dir() {
-        path.as_path()
-    } else {
-        match path.parent() {
-            Some(parent) => parent,
-            None => {
-                return Err(format!("error: {}'s parent is not found", path.to_str().unwrap()));
-            }
-        }
-    };
-
-    let remote_url = get_remote_url(&path_dir)?;
+    let remote_url = get_remote_url(&path)?;
 
     let domain = parse_domain(&remote_url)?.0;
 
     let host = create_https_url(&remote_url)?;
 
-    let root_path = get_local_root_path_string(&path_dir)?;
+    let root_path = get_local_root_path_string(&path)?;
 
-    let ref_path = path.strip_prefix(root_path).unwrap();
+    let abs_path = fs::canonicalize(&path).unwrap();
+    let ref_path = abs_path.strip_prefix(root_path).unwrap();
 
     let root_path_str = ref_path.to_str().unwrap().to_string();
 
@@ -307,5 +305,15 @@ mod tests {
         target_dir.create_dir(Path::new(target_dirname));
         eprintln!("path: {:?}", target_path);
         assert_eq!(Path::new(&get_local_root_path_string(&target_path).unwrap()), fs::canonicalize(&target_dir.dir_path).unwrap());
+    }
+
+    #[test]
+    fn  get__line_number_to_string__single_param(){
+        assert_eq!(&line_number_to_string(&Domain::Github, "12").unwrap(), "#L12");
+    }
+
+    #[test]
+    fn  get__line_number_to_string__range_param(){
+        assert_eq!(&line_number_to_string(&Domain::Github, "12-34").unwrap(), "#L12-#L34");
     }
 }
