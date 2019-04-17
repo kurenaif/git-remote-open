@@ -288,9 +288,28 @@ mod tests {
             let dir_path = Path::new("unit_test_dir").join(&ulid);
             fs::create_dir_all(&dir_path);
 
+
             let mut process = Command::new("git")
                 .current_dir(&dir_path)
                 .arg("init")
+                .spawn()
+                .expect("failed to git init");
+            process.wait();
+
+            let mut process = Command::new("git")
+                .arg("config")
+                .arg("--local")
+                .arg("user.name")
+                .arg("i_am_unit_test_man")
+                .spawn()
+                .expect("failed to git init");
+            process.wait();
+
+            let mut process = Command::new("git")
+                .arg("config")
+                .arg("--local")
+                .arg("user.email")
+                .arg("i_am_unit_test_man@unit_test_man.mail")
                 .spawn()
                 .expect("failed to git init");
             process.wait();
