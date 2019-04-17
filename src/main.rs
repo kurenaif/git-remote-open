@@ -270,7 +270,7 @@ mod tests {
 
     impl Drop for TargetDir {
         fn drop(&mut self){
-            fs::remove_dir(&self.dir_path);
+            fs::remove_dir_all(&self.dir_path);
         }
     }
 
