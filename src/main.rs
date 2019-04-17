@@ -223,7 +223,7 @@ fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
 }
 
 fn main() {
-    let matches = App::new("auto_wmake")
+    let matches = App::new("git-remote-open")
     .version("0.1")
     .author("kurenaif <antyobido@gmail.com>")
     .about("open github page")
