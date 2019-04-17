@@ -194,10 +194,16 @@ fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
 
     let root_path_str = ref_path.to_str().unwrap().to_string();
 
+    let branch_name = if matches.is_present("branch") {
+        matches.value_of("branch").unwrap().to_string()
+    } else {
+        get_current_branch_name(path)?
+    };
+
     let source_url = if root_path_str.is_empty() || matches.is_present("root") {
         host
     } else {
-        host + "/tree/master/" + &root_path_str
+        host + "/tree/" + &branch_name +"/" + &root_path_str
     };
 
     if matches.is_present("line") {
@@ -207,55 +213,51 @@ fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
     }
 }
 
-fn main(){
-    println!("branch: {}", get_current_branch_name(Path::new(".")).unwrap());
+fn main() {
+    let matches = App::new("auto_wmake")
+    .version("0.1")
+    .author("kurenaif <antyobido@gmail.com>")
+    .about("open github page")
+    .arg(Arg::with_name("path")
+        .help("Path of the git repository where you want to open github.")
+        .index(1))
+    .arg(Arg::with_name("root")
+        .short("r")
+        .long("root")
+        .help("open root page regardless of argument \"path\""))
+    .arg(Arg::with_name("silent")
+        .short("s")
+        .long("slient")
+        .help("not open browser (only url standard output)"))
+    .arg(Arg::with_name("line")
+        .short("l")
+        .long("line")
+        .value_name("N[-N]")
+        .help("open line numbers: \"line_number\" or \"[line_start_number]-[line_end_number]\"")
+        .takes_value(true))
+    .arg(Arg::with_name("branch")
+        .short("b")
+        .long("branch")
+        .value_name("branch name")
+        .help("open with branch name (default: current branch)")
+        .takes_value(true))
+    .get_matches();
+
+
+    let open_url = match get_url(&matches) {
+        Ok(url) => url,
+        Err(msg) => {
+            eprintln!("error: {}", msg);
+            ::std::process::exit(1);
+        }
+    };
+
+    println!("{}", open_url);
+
+    if !matches.is_present("silent") {
+        let _ = open::that(open_url);
+    }
 }
-
-// fn main() {
-//     let matches = App::new("auto_wmake")
-//     .version("0.1")
-//     .author("kurenaif <antyobido@gmail.com>")
-//     .about("open github page")
-//     .arg(Arg::with_name("path")
-//         .help("Path of the git repository where you want to open github.")
-//         .index(1))
-//     .arg(Arg::with_name("root")
-//         .short("r")
-//         .long("root")
-//         .help("open root page regardless of argument \"path\""))
-//     .arg(Arg::with_name("silent")
-//         .short("s")
-//         .long("slient")
-//         .help("not open browser (only url standard output)"))
-//     .arg(Arg::with_name("line")
-//         .short("l")
-//         .long("line")
-//         .value_name("N[-N]")
-//         .help("open line numbers: \"line_number\" or \"[line_start_number]-[line_end_number]\"")
-//         .takes_value(true))
-//     .arg(Arg::with_name("branch")
-//         .short("b")
-//         .long("branch")
-//         .value_name("branch name")
-//         .help("open with branch name (default: current branch)")
-//         .takes_value(true))
-//     .get_matches();
-
-
-//     let open_url = match get_url(&matches) {
-//         Ok(url) => url,
-//         Err(msg) => {
-//             eprintln!("error: {}", msg);
-//             ::std::process::exit(1);
-//         }
-//     };
-
-//     println!("{}", open_url);
-
-//     if !matches.is_present("silent") {
-//         let _ = open::that(open_url);
-//     }
-// }
 
 extern crate ulid;
 
