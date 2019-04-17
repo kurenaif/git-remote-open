@@ -33,7 +33,7 @@ fn get_abs_dir_path(path: &Path) -> Result<PathBuf, String> {
 }
 
 /// if status_code is not 0 return Err
-fn status_2_result(status: &ExitStatus, message: &'static str) -> Result<i32, &'static str> {
+fn status_2_result(status: ExitStatus, message: &'static str) -> Result<i32, &'static str> {
     let status_code = status.code().unwrap();
     match status_code {
         0 => Ok(status_code),
@@ -52,7 +52,7 @@ fn get_remote_url(path: &Path) -> Result<String, &str> {
         .expect("failed to get url");
 
     try!(status_2_result(
-        &process.status,
+        process.status,
         "failed to run \"git config remote.origin.url\""
     ));
 
@@ -74,7 +74,7 @@ fn get_local_root_path_string(path: &Path) -> Result<String, String> {
         .expect("failed to get root path");
 
     try!(status_2_result(
-        &process.status,
+        process.status,
         "failed to run \"git rev-parse --show-toplevel\""
     ));
 
@@ -98,7 +98,7 @@ fn parse_domain(url: &str) -> Result<(Domain, String), &str> {
     let matches: Vec<_> = set.matches(url).into_iter().collect();
     if matches.len() > 1 {
         return Err("Multiple url matches.");
-    } else if matches.len() == 0 {
+    } else if matches.is_empty() {
         return Err("domain not found");
     }
 
@@ -121,10 +121,15 @@ fn create_https_url(url: &str) -> Result<String, &str> {
     match domain.0 {
         Domain::Github => {
             // github
-            let connected_str = "https://github.com/".to_owned() + &domain.1;
-            let re = Regex::new(r"\.git$").unwrap();
-            let res = re.replace_all(&connected_str, "");
-            Ok(res.to_string())
+            let mut connected_str = "https://github.com/".to_owned() + &domain.1;
+            let root_url = if connected_str.ends_with(".git") {
+                let len = connected_str.len();
+                connected_str.truncate(len - 4);
+                connected_str
+            } else {
+                connected_str
+            };
+            Ok(root_url)
         }
     }
 }
@@ -161,14 +166,14 @@ fn get_current_branch_name(path: &Path) -> Result<String, &str> {
         .output()
         .expect("failed to get root path");
 
-    status_2_result(&process.status, "failed to run \"git branch\"")?;
+    status_2_result(process.status, "failed to run \"git branch\"")?;
 
-    let mut branches = String::from_utf8_lossy(&process.stdout).to_string();
+    let branches = String::from_utf8_lossy(&process.stdout).to_string();
     for branch in branches.split('\n') {
         if branch.is_empty() {
             continue;
         }
-        if branch.chars().next().unwrap() == '*' {
+        if branch.starts_with('*') {
             let mut branch_name_rev = branch.chars().rev().collect::<String>();
             branch_name_rev.pop();
             branch_name_rev.pop();
