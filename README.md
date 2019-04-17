@@ -19,10 +19,12 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -l, --line <N[-N]>    open line numbers: "line_number" or "[line_start_number]-[line_end_number]"
+    -b, --branch <branch name>    open with branch name (default: current branch)
+    -l, --line <N[-N]>            open line numbers: "line_number" or "[line_start_number]-[line_end_number]"
 
 ARGS:
     <path>    Path of the git repository where you want to open github.
+
 ```
 
 ### Example
