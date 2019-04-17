@@ -288,7 +288,6 @@ mod tests {
             let dir_path = Path::new("unit_test_dir").join(&ulid);
             fs::create_dir_all(&dir_path);
 
-
             let mut process = Command::new("git")
                 .current_dir(&dir_path)
                 .arg("init")
