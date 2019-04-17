@@ -303,7 +303,6 @@ mod tests {
         let target_dirname = "hoge_dir";
         let target_path = target_dir.dir_path.join(&target_dirname);
         target_dir.create_dir(Path::new(target_dirname));
-        eprintln!("path: {:?}", target_path);
         assert_eq!(Path::new(&get_local_root_path_string(&target_path).unwrap()), fs::canonicalize(&target_dir.dir_path).unwrap());
     }
 
