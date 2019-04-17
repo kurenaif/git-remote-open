@@ -297,6 +297,26 @@ mod tests {
 
             let mut process = Command::new("git")
                 .current_dir(&dir_path)
+                .arg("config")
+                .arg("--local")
+                .arg("user.name")
+                .arg("i_am_unit_test_man")
+                .spawn()
+                .expect("failed to git config local user.name");
+            process.wait();
+
+            let mut process = Command::new("git")
+                .current_dir(&dir_path)
+                .arg("config")
+                .arg("--local")
+                .arg("user.email")
+                .arg("i_am_unit_test_man@unit_test_man.mail")
+                .spawn()
+                .expect("failed to git config local user.email");
+            process.wait();
+
+            let mut process = Command::new("git")
+                .current_dir(&dir_path)
                 .arg("commit")
                 .arg("--allow-empty")
                 .arg("-m")
