@@ -1,13 +1,13 @@
-extern crate regex;
-extern crate open;
 extern crate clap;
+extern crate open;
+extern crate regex;
 
-use regex::{RegexSet, Regex};
+use regex::{Regex, RegexSet};
 
+use clap::{App, Arg};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
-use clap::{App, Arg};
 
 enum Domain {
     Github,
@@ -24,9 +24,10 @@ fn get_abs_dir_path(path: &Path) -> Result<PathBuf, String> {
     } else {
         match path.parent() {
             Some(parent) => Ok(parent.to_path_buf()),
-            None => {
-                Err(format!("error: {}'s parent is not found", path.to_str().unwrap()))
-            }
+            None => Err(format!(
+                "error: {}'s parent is not found",
+                path.to_str().unwrap()
+            )),
         }
     }
 }
@@ -36,7 +37,7 @@ fn status_2_result(status: &ExitStatus, message: &'static str) -> Result<i32, &'
     let status_code = status.code().unwrap();
     match status_code {
         0 => Ok(status_code),
-        _ => Err(message)
+        _ => Err(message),
     }
 }
 
@@ -44,16 +45,19 @@ fn status_2_result(status: &ExitStatus, message: &'static str) -> Result<i32, &'
 fn get_remote_url(path: &Path) -> Result<String, &str> {
     let dir_path = get_abs_dir_path(path).unwrap();
     let process = Command::new("git")
-    .current_dir(&dir_path)
-    .arg("config")
-    .arg("remote.origin.url")
-    .output()
-    .expect("failed to get url");
+        .current_dir(&dir_path)
+        .arg("config")
+        .arg("remote.origin.url")
+        .output()
+        .expect("failed to get url");
 
-    try!(status_2_result(&process.status, "failed to run \"git config remote.origin.url\""));
+    try!(status_2_result(
+        &process.status,
+        "failed to run \"git config remote.origin.url\""
+    ));
 
     let mut res = process.stdout;
-    res.pop();// remove \n
+    res.pop(); // remove \n
 
     Ok(String::from_utf8_lossy(&res).to_string())
 }
@@ -63,38 +67,38 @@ fn get_local_root_path_string(path: &Path) -> Result<String, String> {
     let dir_path = get_abs_dir_path(path).unwrap();
 
     let process = Command::new("git")
-    .current_dir(&dir_path)
-    .arg("rev-parse")
-    .arg("--show-toplevel")
-    .output()
-    .expect("failed to get root path");
+        .current_dir(&dir_path)
+        .arg("rev-parse")
+        .arg("--show-toplevel")
+        .output()
+        .expect("failed to get root path");
 
-    try!(status_2_result(&process.status, "failed to run \"git rev-parse --show-toplevel\""));
-    
+    try!(status_2_result(
+        &process.status,
+        "failed to run \"git rev-parse --show-toplevel\""
+    ));
+
     let mut abspath_vec = process.stdout;
-    abspath_vec.pop();// remove \n
+    abspath_vec.pop(); // remove \n
 
-   let abspath_string = String::from_utf8_lossy(&abspath_vec).to_string();
+    let abspath_string = String::from_utf8_lossy(&abspath_vec).to_string();
 
-   Ok(abspath_string)
+    Ok(abspath_string)
 }
 
 /// url parse to (domain, path)
 fn parse_domain(url: &str) -> Result<(Domain, String), &str> {
     let regexes = [
-        r"git@github.com:(.+)", // 0: ssh github
+        r"git@github.com:(.+)",     // 0: ssh github
         r"https://github.com/(.+)", // 1: https github
     ];
 
-    let set = RegexSet::new(
-        &regexes
-    ).unwrap();
+    let set = RegexSet::new(&regexes).unwrap();
 
     let matches: Vec<_> = set.matches(url).into_iter().collect();
     if matches.len() > 1 {
         return Err("Multiple url matches.");
-    }
-    else if matches.len() == 0 {
+    } else if matches.len() == 0 {
         return Err("domain not found");
     }
 
@@ -102,12 +106,11 @@ fn parse_domain(url: &str) -> Result<(Domain, String), &str> {
     let caps = re.captures(url).unwrap();
 
     match matches[0] {
-        0 | 1 => { // github
+        0 | 1 => {
+            // github
             Ok((Domain::Github, caps[1].to_string()))
-        },
-        _ => {
-            panic!("regex matched but regex is not match.(This message should not come out)")
         }
+        _ => panic!("regex matched but regex is not match.(This message should not come out)"),
     }
 }
 
@@ -116,18 +119,19 @@ fn create_https_url(url: &str) -> Result<String, &str> {
     let domain = parse_domain(url)?;
 
     match domain.0 {
-        Domain::Github => { // github
+        Domain::Github => {
+            // github
             let connected_str = "https://github.com/".to_owned() + &domain.1;
             let re = Regex::new(r"\.git$").unwrap();
             let res = re.replace_all(&connected_str, "");
             Ok(res.to_string())
-        },
+        }
     }
 }
 
-/// 
+///
 /// Convert command line arguments passed in '-l' to strings appropriate for each domain
-/// 
+///
 /// # Examples
 /// ```
 /// -l {n}-{m} => path/to/url/#L{n}-#L{m}
@@ -136,7 +140,7 @@ fn create_https_url(url: &str) -> Result<String, &str> {
 fn line_number_to_string(domain: &Domain, line_option_str: &str) -> Result<String, String> {
     match domain {
         Domain::Github => {
-            if Regex::new(r"^\d+$").unwrap().is_match(line_option_str){
+            if Regex::new(r"^\d+$").unwrap().is_match(line_option_str) {
                 Ok("#L".to_string() + line_option_str)
             } else if Regex::new(r"^\d+-\d+$").unwrap().is_match(line_option_str) {
                 let line_numbers: Vec<&str> = line_option_str.split('-').collect();
@@ -144,7 +148,7 @@ fn line_number_to_string(domain: &Domain, line_option_str: &str) -> Result<Strin
             } else {
                 Err("error: line number's format is invalid".to_string())
             }
-        },
+        }
     }
 }
 
@@ -152,10 +156,10 @@ fn get_current_branch_name(path: &Path) -> Result<String, &str> {
     let dir_path = get_abs_dir_path(path).unwrap();
 
     let process = Command::new("git")
-    .current_dir(&dir_path)
-    .arg("branch")
-    .output()
-    .expect("failed to get root path");
+        .current_dir(&dir_path)
+        .arg("branch")
+        .output()
+        .expect("failed to get root path");
 
     status_2_result(&process.status, "failed to run \"git branch\"")?;
 
@@ -175,7 +179,6 @@ fn get_current_branch_name(path: &Path) -> Result<String, &str> {
 
     Err("error: current branch not found")
 }
-
 
 /// get open url
 fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
@@ -203,11 +206,12 @@ fn get_url(matches: &clap::ArgMatches) -> Result<String, String> {
     let source_url = if root_path_str.is_empty() || matches.is_present("root") {
         host
     } else {
-        host + "/tree/" + &branch_name +"/" + &root_path_str
+        host + "/tree/" + &branch_name + "/" + &root_path_str
     };
 
     if matches.is_present("line") {
-        Ok(source_url.to_string() + &line_number_to_string(&domain, &matches.value_of("line").unwrap().to_string())?)
+        Ok(source_url.to_string()
+            + &line_number_to_string(&domain, &matches.value_of("line").unwrap().to_string())?)
     } else {
         Ok(source_url)
     }
@@ -243,7 +247,6 @@ fn main() {
         .takes_value(true))
     .get_matches();
 
-
     let open_url = match get_url(&matches) {
         Ok(url) => url,
         Err(msg) => {
@@ -266,12 +269,12 @@ mod tests {
     use super::*;
     use std::fs;
     use std::fs::File;
-    use ulid::Ulid;
     use std::path::{Path, PathBuf};
     use std::process::Command;
+    use ulid::Ulid;
 
     struct TargetDir {
-        dir_path: PathBuf
+        dir_path: PathBuf,
     }
 
     impl TargetDir {
@@ -281,30 +284,35 @@ mod tests {
             fs::create_dir_all(&dir_path);
 
             let mut process = Command::new("git")
-            .current_dir(&dir_path)
-            .arg("init")
-            .spawn().expect("failed to git init");
+                .current_dir(&dir_path)
+                .arg("init")
+                .spawn()
+                .expect("failed to git init");
             process.wait();
 
             let mut process = Command::new("git")
-            .current_dir(&dir_path)
-            .arg("commit")
-            .arg("--allow-empty")
-            .arg("-m")
-            .arg("\"first commit\"")
-            .spawn().expect("failed to git init");
+                .current_dir(&dir_path)
+                .arg("commit")
+                .arg("--allow-empty")
+                .arg("-m")
+                .arg("\"first commit\"")
+                .spawn()
+                .expect("failed to git init");
             process.wait();
 
             let mut process = Command::new("git")
-            .current_dir(&dir_path)
-            .arg("remote")
-            .arg("add")
-            .arg("origin")
-            .arg(remote_url)
-            .spawn().expect("failed to add remote url");
+                .current_dir(&dir_path)
+                .arg("remote")
+                .arg("add")
+                .arg("origin")
+                .arg(remote_url)
+                .spawn()
+                .expect("failed to add remote url");
             process.wait();
 
-            TargetDir{dir_path: dir_path.to_path_buf()}
+            TargetDir {
+                dir_path: dir_path.to_path_buf(),
+            }
         }
 
         pub fn create_file(&self, file_name: &Path) {
@@ -317,71 +325,85 @@ mod tests {
 
         pub fn create_branch(&self, branch_name: &str) {
             let mut process = Command::new("git")
-            .current_dir(&self.dir_path)
-            .arg("branch")
-            .arg(branch_name)
-            .spawn().expect("fail git branch command");
+                .current_dir(&self.dir_path)
+                .arg("branch")
+                .arg(branch_name)
+                .spawn()
+                .expect("fail git branch command");
             process.wait();
         }
 
         pub fn checkout_branch(&self, branch_name: &str) {
             let mut process = Command::new("git")
-            .current_dir(&self.dir_path)
-            .arg("checkout")
-            .arg(&branch_name)
-            .spawn().expect("fail git checkout command");
+                .current_dir(&self.dir_path)
+                .arg("checkout")
+                .arg(&branch_name)
+                .spawn()
+                .expect("fail git checkout command");
             process.wait();
         }
     }
 
     impl Drop for TargetDir {
-        fn drop(&mut self){
+        fn drop(&mut self) {
             fs::remove_dir_all(&self.dir_path);
         }
     }
 
     #[test]
-    fn github__ssh__get_remote_url(){
+    fn github__ssh__get_remote_url() {
         let dummy_url = "git@github.com:kurenaif/git-remote-open-unit-test-dummy.git";
         let target_dir = TargetDir::new(&dummy_url);
         assert_eq!(get_remote_url(&target_dir.dir_path).unwrap(), dummy_url);
     }
 
     #[test]
-    fn github__html__get_remote_url(){
+    fn github__html__get_remote_url() {
         let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
         let target_dir = TargetDir::new(&dummy_url);
         assert_eq!(get_remote_url(&target_dir.dir_path).unwrap(), dummy_url);
     }
 
     #[test]
-    fn  get_git_init_dir__target_file(){
+    fn get_git_init_dir__target_file() {
         let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
         let target_dir = TargetDir::new(&dummy_url);
         let target_filename = "hoge.txt";
         let target_path = target_dir.dir_path.join(&target_filename);
         target_dir.create_file(Path::new(target_filename));
-        assert_eq!(Path::new(&get_local_root_path_string(&target_path).unwrap()), fs::canonicalize(&target_dir.dir_path).unwrap());
+        assert_eq!(
+            Path::new(&get_local_root_path_string(&target_path).unwrap()),
+            fs::canonicalize(&target_dir.dir_path).unwrap()
+        );
     }
 
     #[test]
-    fn  get_git_init_dir__target_dir(){
+    fn get_git_init_dir__target_dir() {
         let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
         let target_dir = TargetDir::new(&dummy_url);
         let target_dirname = "hoge_dir";
         let target_path = target_dir.dir_path.join(&target_dirname);
         target_dir.create_dir(Path::new(target_dirname));
-        assert_eq!(Path::new(&get_local_root_path_string(&target_path).unwrap()), fs::canonicalize(&target_dir.dir_path).unwrap());
+        assert_eq!(
+            Path::new(&get_local_root_path_string(&target_path).unwrap()),
+            fs::canonicalize(&target_dir.dir_path).unwrap()
+        );
     }
 
     #[test]
-    fn  get__line_number_to_string__single_param(){
-        assert_eq!(&line_number_to_string(&Domain::Github, "12").unwrap(), "#L12");
+    fn get__line_number_to_string__single_param() {
+        assert_eq!(
+            &line_number_to_string(&Domain::Github, "12").unwrap(),
+            "#L12"
+        );
     }
 
     #[test]
-    fn  get__line_number_to_string__range_param(){
-        assert_eq!(&line_number_to_string(&Domain::Github, "12-34").unwrap(), "#L12-#L34");
+    fn get__line_number_to_string__range_param() {
+        assert_eq!(
+            &line_number_to_string(&Domain::Github, "12-34").unwrap(),
+            "#L12-#L34"
+        );
     }
 
     #[test]
@@ -389,8 +411,11 @@ mod tests {
         let dummy_url = "https://github.com/kurenaif/git-remote-open-unit-test-dummy.git";
         let target_dir = TargetDir::new(&dummy_url);
         target_dir.create_branch("hogehoge_mogumogu");
-        assert_eq!(get_current_branch_name(&target_dir.dir_path).unwrap(), "master");
-    } 
+        assert_eq!(
+            get_current_branch_name(&target_dir.dir_path).unwrap(),
+            "master"
+        );
+    }
 
     #[test]
     fn current_branch_name__new_branch() {
@@ -401,6 +426,9 @@ mod tests {
         target_dir.create_branch("dummy2");
         target_dir.create_branch("dummy3");
         target_dir.checkout_branch("new_branch");
-        assert_eq!(get_current_branch_name(&target_dir.dir_path).unwrap(), "new_branch");
-    } 
+        assert_eq!(
+            get_current_branch_name(&target_dir.dir_path).unwrap(),
+            "new_branch"
+        );
+    }
 }
