@@ -302,7 +302,7 @@ mod tests {
                 .arg("user.name")
                 .arg("i_am_unit_test_man")
                 .spawn()
-                .expect("failed to git init");
+                .expect("failed to git config local user.name");
             process.wait();
 
             let mut process = Command::new("git")
@@ -311,7 +311,7 @@ mod tests {
                 .arg("user.email")
                 .arg("i_am_unit_test_man@unit_test_man.mail")
                 .spawn()
-                .expect("failed to git init");
+                .expect("failed to git config local user.email");
             process.wait();
 
             let mut process = Command::new("git")
