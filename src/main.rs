@@ -296,6 +296,7 @@ mod tests {
             process.wait();
 
             let mut process = Command::new("git")
+                .current_dir(&dir_path)
                 .arg("config")
                 .arg("--local")
                 .arg("user.name")
@@ -305,6 +306,7 @@ mod tests {
             process.wait();
 
             let mut process = Command::new("git")
+                .current_dir(&dir_path)
                 .arg("config")
                 .arg("--local")
                 .arg("user.email")
