@@ -149,7 +149,7 @@ fn line_number_to_string(domain: &Domain, line_option_str: &str) -> Result<Strin
                 Ok("#L".to_string() + line_option_str)
             } else if Regex::new(r"^\d+-\d+$").unwrap().is_match(line_option_str) {
                 let line_numbers: Vec<&str> = line_option_str.split('-').collect();
-                Ok("#L".to_string() + line_numbers[0] + "-#L" + line_numbers[1])
+                Ok("#L".to_string() + line_numbers[0] + "-L" + line_numbers[1])
             } else {
                 Err("error: line number's format is invalid".to_string())
             }
@@ -427,7 +427,7 @@ mod tests {
     fn get__line_number_to_string__range_param() {
         assert_eq!(
             &line_number_to_string(&Domain::Github, "12-34").unwrap(),
-            "#L12-#L34"
+            "#L12-L34"
         );
     }
 
